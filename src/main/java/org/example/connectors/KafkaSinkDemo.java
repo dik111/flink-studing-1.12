@@ -4,8 +4,6 @@ import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSink;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
@@ -14,14 +12,14 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import java.util.Properties;
 
 /**
- * Desription:
+ * Desription:演示flink-connectors-kafkaConsumer/Source + kafkaProducer/Sink
  *
  * @ClassName KafkaConsumerDemo
  * @Author Zhanyuwei
  * @Date 2021/2/5 5:41 下午
  * @Version 1.0
  **/
-public class KafkaConsumerDemo {
+public class KafkaSinkDemo {
 
     public static void main(String[] args) throws Exception {
         // 0.env
@@ -48,9 +46,20 @@ public class KafkaConsumerDemo {
         DataStream kafkaDS = env.addSource(kafkaSource);
 
         // transformation
+        SingleOutputStreamOperator etlDS = kafkaDS.filter(new FilterFunction<String>() {
+            @Override
+            public boolean filter(String value) throws Exception {
+                return value.contains("success");
+            }
+        });
+
+
 
         // sink
-        kafkaDS.print();
+        etlDS.print();
+        Properties props2 = new Properties();
+        props2.setProperty("bootstrap.servers", "master:9092");
+        etlDS.addSink(new FlinkKafkaProducer<String>("flink_kafka2", new SimpleStringSchema(), props2));
 
         env.execute();
 
